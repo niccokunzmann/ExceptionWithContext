@@ -53,6 +53,7 @@ class ExceptionWithContext(Exception):
             traceback.print_exc()
 
 def calling_frame():
+    # TODO: change this to allow more modules to take part
     import sys, thread
     id = thread.get_ident()
     frame = sys._current_frames()[id]
@@ -91,9 +92,12 @@ def f():
 
 opcodes = [opcode for index, opcode in get_opcodes(f.func_code)]
 _opcodes = zip(opcodes, opcodes + [None])
-assert ('SETUP_EXCEPT', 'SETUP_FINALLY') or ('SETUP_FINALLY', 'SETUP_EXCEPT') in _opcodes, opcodes # this is important for an assumption in is_in_error_handling
+assert ('SETUP_EXCEPT', 'SETUP_FINALLY') or ('SETUP_FINALLY', 'SETUP_EXCEPT') in _opcodes, """this is important for an assumption in is_in_error_handling. When try:except:finally: occur there must be two opening blocks right after each other. {}""".format(opcodes)
+
+del f, _opcodes, opcodes
         
 def is_in_error_handling():
+    """=> called in the except or finally block of the last exception"""
     ty, err, tb = last_exc_info()
 ##    traceback.print_exception(ty, err, tb)    
     if tb is None: return False
@@ -154,6 +158,8 @@ def is_in_error_handling():
         i = i+1
     return False
 
+__all__ = ['is_in_error_handling', 'calling_frame', 'ExceptionWithContext', \
+           'last_exc_info']
 
 
 if __name__ == '__main__':

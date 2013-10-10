@@ -135,7 +135,7 @@ def test_has_traceback_of_error():
     traceback.print_exception(ty, err, tb, file = f)
     assert f.getvalue() in str(ce)
     
-    
+## TODO: test sys.exc_info() for unchanged behavior
 
 def module_main():
     """main routine of the main module"""
