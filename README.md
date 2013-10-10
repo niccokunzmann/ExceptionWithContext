@@ -39,3 +39,11 @@ But here it is the other way around:
  1. `Exception` 
  2. `During handling of the above exception, another exception occurred:`
  3. `ExceptionWithContext`
+
+Tests
+-----
+
+Run the tests having installed [pytest](http://pytest.org/latest/) 
+
+`py.test-2.7 test_ExceptionWithContext.py`
+
