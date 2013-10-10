@@ -27,3 +27,15 @@ Traceback (most recent call last):
     raise Exception('normal exception')
 Exception: normal exception
 ```
+
+Here it is the other way around:
+
+ 1. `ExceptionWithContext` 
+ 2. `This exception occured during the handling of the exception below:`
+ 3. `Exception`
+ 
+In Python 3 it is like:
+
+ 1. `Exception` 
+ 2. `During handling of the above exception, another exception occurred:`
+ 3. `ExceptionWithContext`
