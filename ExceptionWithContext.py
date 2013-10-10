@@ -3,6 +3,8 @@ from opcode import *
 
 import sys
 import threading
+import traceback
+import StringIO
 
 last_error = threading.local()
 
@@ -24,21 +26,40 @@ def last_exc_info():
         return None, None, None
     return last_error.result
 
+MESSAGE_IN_BETWEEN_THE_ERRORS = 'This exception occured during the handling of the exception below:'
+
 class ExceptionWithContext(Exception):
     __context__ = None
-    __taceback__ = None
+    __traceback__ = None
     def __init__(self, *args, **kw):
         Exception.__init__(self, *args, **kw)
+##        print is_in_error_handling()
         if is_in_error_handling():
             ty, err, tb = last_exc_info()
             self.__context__ = err
             self.__traceback__ = tb
+
+    def __str__(self):
+        try:
+            base_string = Exception.__str__(self)
+            if self.__context__ is None: return base_string
+            file = StringIO.StringIO()
+            traceback.print_exception(type(self.__context__), self.__context__, \
+                                      self.__traceback__, file = file)
+            return base_string + '\n\n' + \
+                   MESSAGE_IN_BETWEEN_THE_ERRORS + '\n\n' + \
+                   file.getvalue()
+        except:
+            traceback.print_exc()
 
 def calling_frame():
     import sys, thread
     id = thread.get_ident()
     frame = sys._current_frames()[id]
     while frame.f_globals is globals():
+        if not frame.f_back:
+            # so the error occured here in this module...
+            return frame 
         frame = frame.f_back
     return frame
 
@@ -74,12 +95,13 @@ assert ('SETUP_EXCEPT', 'SETUP_FINALLY') or ('SETUP_FINALLY', 'SETUP_EXCEPT') in
         
 def is_in_error_handling():
     ty, err, tb = last_exc_info()
-    traceback.print_exception(ty, err, tb)
+##    traceback.print_exception(ty, err, tb)    
     if tb is None: return False
     frame = calling_frame()
     if not tb.tb_frame is frame:
         # a reraise of an exception with another traceback occurred
         # or we got the error from somewhere
+##        print ' not tb.tb_frame is frame'
         return False
     last_tb = tb
     while tb.tb_frame.f_code is frame.f_code:
@@ -91,8 +113,6 @@ def is_in_error_handling():
     tb_index = to_opcode_index(opcodes, tb.tb_lasti)
     lasti = to_opcode_index(opcodes, frame.f_lasti)
     # never use frame. or tb. from here on
-    for index, opcode in enumerate(opcodes):
-        print index, opcode
     assert lasti > tb_index, (lasti, tb_index, frame.f_lasti, tb.tb_lineno)
     i = tb_index
     counted_except_ends = 0
@@ -106,7 +126,7 @@ def is_in_error_handling():
             found_my_exception_start = counted_except_ends == 0
             if found_my_exception_start:
                 if i > 0 and op_name(i-1) in ('SETUP_EXCEPT', 'SETUP_FINALLY'):
-                    print 'djdfhjakjdsfhadsja'
+##                    print 'djdfhjakjdsfhadsja'
                     i -= 1
                 break
             counted_except_ends += 1
@@ -134,7 +154,8 @@ def is_in_error_handling():
         i = i+1
     return False
 
-if __name__ == '__main__':
 
-    from test_ExceptionWithContext import xxxxx
-    xxxxx()
+
+if __name__ == '__main__':
+    from test_ExceptionWithContext import module_main
+    module_main()

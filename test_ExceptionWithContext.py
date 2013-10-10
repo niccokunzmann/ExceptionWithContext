@@ -1,6 +1,8 @@
 from ExceptionWithContext import *
 import dis
 import sys
+import StringIO
+import traceback
 
 ## tests for Exception in general
 
@@ -108,15 +110,40 @@ def test_has_context_of_raised_exception():
         assert e == err1
         assert tb1 == err.__traceback__
 
-
-
-def xxxxx():
+def thrown_error():
+    class MyError(Exception): pass
     try:
-        try:pass
-        except:pass
-        finally:pass
+        e = MyError("My Error Text")
+        raise e
     except:
-        try: pass
-        except: pass
-        finally: pass
-    print is_in_error_handling()
+        ty, err, tb = sys.exc_info()
+        return ExceptionWithContext('exception during errorhandling'), e, ty, err, tb
+
+## error formatting
+
+def test_hash_thrown_error_as_context():
+    ce, me = thrown_error()[:2]
+    assert ce.__context__ == me
+
+def test_has_error_mssage_of_thrown_error():
+    ce, me = thrown_error()[:2]
+    assert me.args[0] in str(ce)
+
+def test_has_traceback_of_error():
+    ce, me, ty, err, tb = thrown_error()
+    f = StringIO.StringIO()
+    traceback.print_exception(ty, err, tb, file = f)
+    assert f.getvalue() in str(ce)
+    
+    
+
+def module_main():
+    """main routine of the main module"""
+    try:
+        try:
+            raise Exception('normal exception')
+        except:
+            raise ExceptionWithContext('exception during errorhandling')
+    except:
+        traceback.print_exc()
+        pass
