@@ -28,13 +28,13 @@ Traceback (most recent call last):
 Exception: normal exception
 ```
 
-Here it is the other way around:
+In Python 3, the order would be:
 
  1. `ExceptionWithContext` 
  2. `This exception occured during the handling of the exception below:`
  3. `Exception`
  
-In Python 3 it is like:
+But here it is the other way around:
 
  1. `Exception` 
  2. `During handling of the above exception, another exception occurred:`
