@@ -1,5 +1,8 @@
 from ExceptionWithContext import *
 import dis
+import sys
+
+## tests for Exception in general
 
 def exc_info(exception):
     try:
@@ -14,10 +17,14 @@ def test_raised_has_message():
 def test_raised_has_type():
     assert exc_info(ExceptionWithContext())[0] == ExceptionWithContext
 
+## tests for calling_frame
+
 def test_this_is_the_frame():
     frame = calling_frame()
     assert frame.f_globals is globals()
 
+## tests for is_in_error_handling()
+    
 def test_is_before_error_handling():
     assert not is_in_error_handling()
     try: pass
@@ -82,7 +89,25 @@ def test_is_in_finally_block_with_try_before_exception():
     except: pass
     finally: assert is_in_error_handling()
 
-# create more tests!
+# TODO: create more tests for is_in_error_handling() with more try and except stuff
+
+## tests for the exception:
+
+def test_has_context_of_raised_exception():
+    try:
+        try:
+            e = Exception('trallala')
+            raise e
+        except:
+            ty1, err1, tb1 = sys.exc_info()
+            raise ExceptionWithContext('mimimi')
+    except ExceptionWithContext:
+        ty, err, tb = sys.exc_info()
+        assert err.args == ('mimimi',)
+        assert err.__context__ == e
+        assert e == err1
+        assert tb1 == err.__traceback__
+
 
 
 def xxxxx():

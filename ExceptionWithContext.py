@@ -25,7 +25,14 @@ def last_exc_info():
     return last_error.result
 
 class ExceptionWithContext(Exception):
-    pass
+    __context__ = None
+    __taceback__ = None
+    def __init__(self, *args, **kw):
+        Exception.__init__(self, *args, **kw)
+        if is_in_error_handling():
+            ty, err, tb = last_exc_info()
+            self.__context__ = err
+            self.__traceback__ = tb
 
 def calling_frame():
     import sys, thread
