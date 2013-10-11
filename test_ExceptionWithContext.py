@@ -28,7 +28,7 @@ def test_this_is_the_frame():
 ## tests for is_in_error_handling()
     
 def test_is_before_error_handling():
-    assert not is_in_error_handling()
+    assert exception_context() == (None, None, None)
     try: pass
     except (): pass
     finally: pass
@@ -37,35 +37,35 @@ def test_is_after_error_handling():
     try: pass
     except: pass
     finally: pass
-    assert not is_in_error_handling()
+    assert exception_context() == (None, None, None)
 
 def test_is_after_error():
     try: raise Exception()
     except: pass
     finally: pass
-    assert not is_in_error_handling()
+    assert exception_context() == (None, None, None)
 
 def test_try_is_not_error_handling():
-    try: assert not is_in_error_handling()
+    try: assert exception_context() == (None, None, None)
     except (): pass
     finally: pass
 
 def test_is_in_except_block():
     try: raise Exception()
-    except: assert is_in_error_handling()
+    except: assert exception_context()[0] == Exception
     finally: pass
     
 def test_is_in_finally_block():
     try: raise Exception()
     except: pass
-    finally: assert is_in_error_handling()
+    finally: assert exception_context() == (None, None, None)
 
 def test_is_in_try_but_after_error_handling():
     try:
         try: raise Exception()
         except: pass
         finally: pass
-        assert not is_in_error_handling()
+        assert exception_context() == (None, None, None)
     except:pass
 
 def test_is_in_finally_of_other_error_handling():
@@ -74,13 +74,13 @@ def test_is_in_finally_of_other_error_handling():
         except: pass
         finally: pass
     except:pass
-    finally: assert not is_in_error_handling()
+    finally: assert exception_context() == (None, None, None)
 
 
 def test_is_in_finally_block():
     try: raise Exception()
     except: pass
-    finally: assert is_in_error_handling()
+    finally: assert exception_context() == (None, None, None)
     
 
 def test_is_in_finally_block_with_try_before_exception():
@@ -89,7 +89,7 @@ def test_is_in_finally_block_with_try_before_exception():
         except:pass
         raise Exception()
     except: pass
-    finally: assert is_in_error_handling()
+    finally: assert exception_context() == (None, None, None)
 
 # TODO: create more tests for is_in_error_handling() with more try and except stuff
 

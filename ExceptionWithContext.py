@@ -18,7 +18,6 @@ def exc_info():
         # or in the byte code
     return result
 
-sys.exc_info = exc_info
 
 def last_exc_info():
     exc_info()
@@ -33,11 +32,9 @@ class ExceptionWithContext(Exception):
     __traceback__ = None
     def __init__(self, *args, **kw):
         Exception.__init__(self, *args, **kw)
-##        print is_in_error_handling()
-        if is_in_error_handling():
-            ty, err, tb = last_exc_info()
-            self.__context__ = err
-            self.__traceback__ = tb
+        ty, err, tb = exception_context()
+        self.__context__ = err
+        self.__traceback__ = tb
 
     def __str__(self):
         try:
@@ -91,22 +88,23 @@ def f():
     finally:pass
 
 opcodes = [opcode for index, opcode in get_opcodes(f.func_code)]
-_opcodes = zip(opcodes, opcodes + [None])
-assert ('SETUP_EXCEPT', 'SETUP_FINALLY') or ('SETUP_FINALLY', 'SETUP_EXCEPT') in _opcodes, """this is important for an assumption in is_in_error_handling. When try:except:finally: occur there must be two opening blocks right after each other. {}""".format(opcodes)
+_opcodes = zip([None] + opcodes, opcodes + [None])
+assert ('SETUP_FINALLY', 'SETUP_EXCEPT') in _opcodes, """this is important for an assumption in is_in_error_handling. When try:except:finally: occur there must be two opening blocks right after each other. {}""".format(opcodes)
 
 del f, _opcodes, opcodes
         
-def is_in_error_handling():
+def exception_context():
     """=> called in the except or finally block of the last exception"""
     ty, err, tb = last_exc_info()
 ##    traceback.print_exception(ty, err, tb)    
-    if tb is None: return False
+    if None in (ty, err, tb):
+        return None, None, None
     frame = calling_frame()
     if not tb.tb_frame is frame:
         # a reraise of an exception with another traceback occurred
         # or we got the error from somewhere
 ##        print ' not tb.tb_frame is frame'
-        return False
+        return None, None, None
     last_tb = tb
     while tb.tb_frame.f_code is frame.f_code:
 ##        print 'finally'
@@ -125,13 +123,10 @@ def is_in_error_handling():
 ##              3 SETUP_EXCEPT             4 (to 10)
     # find number of 'SETUP_EXCEPT', 'SETUP_FINALLY'
     op_name = lambda index: opcodes[i][1]
-    while i > 0:
+    while i >= 0:
         if op_name(i) in ('SETUP_EXCEPT', 'SETUP_FINALLY'):
             found_my_exception_start = counted_except_ends == 0
             if found_my_exception_start:
-                if i > 0 and op_name(i-1) in ('SETUP_EXCEPT', 'SETUP_FINALLY'):
-##                    print 'djdfhjakjdsfhadsja'
-                    i -= 1
                 break
             counted_except_ends += 1
         if op_name(i) == 'END_FINALLY':
@@ -139,26 +134,33 @@ def is_in_error_handling():
         i -= 1
     counted_except_ends = 0
     while i < len(opcodes):
-##        print op_name(i).ljust(20), i,
-##        if op_name(i) in ('SETUP_EXCEPT', 'SETUP_FINALLY'): print '+1',
-##        if op_name(i) in ('END_FINALLY',): print '-1',
-##        if i == tb_index: print 'tb',
-##        if i == lasti: print 'frame',
+        print op_name(i).ljust(20), i,
+        if op_name(i) in ('SETUP_EXCEPT', 'SETUP_FINALLY'): print '+1',
+        if op_name(i) in ('END_FINALLY',): print '-1',
+        if i == tb_index: print 'tb',
+        if i == lasti: print 'frame',
         if i == lasti:
-##            print "last!", counted_except_ends
-            return counted_except_ends > 0
-##        print
+            print "last!", counted_except_ends
+            if counted_except_ends > 0 :
+                return ty, err, tb
+            return None, None, None
+        print
         if 'END_FINALLY' == op_name(i):
             counted_except_ends -= 1
         if op_name(i) in ('SETUP_EXCEPT', 'SETUP_FINALLY'):
             counted_except_ends += 1
         if i == lasti and counted_except_ends <= 0:
-            return False
+            return None, None, None
 ##            i += 1
         i = i+1
-    return False
+    return None, None, None
 
-__all__ = ['is_in_error_handling', 'calling_frame', 'ExceptionWithContext', \
+
+## last but not least
+sys.exc_info = exc_info
+
+
+__all__ = ['exception_context', 'calling_frame', 'ExceptionWithContext', \
            'last_exc_info']
 
 
